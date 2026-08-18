@@ -26,7 +26,6 @@ from ..data.rf_loader import PICMUSLoader
 from .evaluate_fieldii import (
     _build_grid,
     _envelope_log_compress,
-    _load_b1_ckpt,
     _load_b1_v3_ckpt,
     _reconstruct_b1,
 )
@@ -83,8 +82,8 @@ def main() -> None:
     p.add_argument("--phantom", default="both",
                    choices=["resolution_distortion", "contrast_speckle", "both"])
     p.add_argument("--model_type", default="b1_v4",
-                   choices=["b1", "b1_v3", "b1_v4"],
-                   help="b1_v3/b1_v4 share architecture (B1V3Residual); B1-v4 only differs in train loss.")
+                   choices=["b1_v3", "b1_v4"],
+                   help="Misma arquitectura (B1V3Residual); b1_v4 solo difiere en la perdida.")
     p.add_argument("--base_ch", type=int, default=32)
     p.add_argument("--nz", type=int, default=612)
     p.add_argument("--nx", type=int, default=388)
@@ -99,10 +98,7 @@ def main() -> None:
     print(f"device = {device}")
     print(f"ckpt   = {args.ckpt}")
 
-    if args.model_type == "b1":
-        model = _load_b1_ckpt(args.ckpt, device, base_ch=args.base_ch)
-    else:
-        model = _load_b1_v3_ckpt(args.ckpt, device, base_ch=args.base_ch)
+    model = _load_b1_v3_ckpt(args.ckpt, device, base_ch=args.base_ch)
     with torch.no_grad():
         g = model.gamma if hasattr(model, "gamma") else {}
     if g:

@@ -40,7 +40,7 @@ from ..data.augmentations import AugConfig
 from ..data.manifest import field_ii_split
 from ..data.rf_loader import FieldIIMultiAngleLoader
 from ..models.b1_v3_residual import B1V3Residual
-from .b1_attention_gate import _build_grid
+from .common import _build_grid
 from .b1_v4_anchored import _iter_split, _forward_and_loss
 from .base_trainer import parse_common_args, run_training
 

@@ -51,7 +51,7 @@ from ..data.rf_loader import FieldIIMultiAngleLoader, zscore_rf
 from ..losses.supervised import mse_l1_ssim_loss
 from ..models.b1_v3_residual import B1V3Residual
 from ..physics.f_number_map import compute_f_number_map_band_avg
-from .b1_attention_gate import (
+from .common import (
     _adjoint_image,
     _build_grid,
     _envelope_log_compress,

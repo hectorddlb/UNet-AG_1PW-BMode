@@ -39,23 +39,27 @@ de difusión. El 84 % de ese coste es el operador físico; la red es el 16 %.
 ## Qué hay aquí
 
 ```
-unet_ag/            el paquete del modelo
-  models/           B1V3Residual (arquitectura propuesta) y sus predecesoras
-  physics/          envoltorio del operador adjunto + mapa de F-number
+unet_ag/
+  models/           B1V3Residual — la arquitectura propuesta, sobre la U-Net
+                    con attention gates condicionadas por F-number
+  physics/          operator_fdf.py (OpHFdf: operador de medida en Fourier y
+                    su adjunto), su envoltorio y el mapa de F-number
   data/             cargadores de Field II y PICMUS, augmentación de pulso
-  train/            entrenadores; b1_v5_pulse_aug es el punto de entrada
+  train/            common.py (piezas compartidas), b1_v4_anchored.py (pérdida
+                    con anclaje) y b1_v5_pulse_aug.py — el punto de entrada
   losses/ metrics/  MSE+L1+SSIM+anclaje; FWHM, CNR, gCNR
   eval/             evaluación en Field II (dentro de dominio) y PICMUS (fuera)
-zhang_dnn/          OpHFdf — operador de medida en Fourier y su adjunto
-schiffner_das/      port del F-number dependiente de frecuencia; genera targets
+schiffner_das/      F-number dependiente de frecuencia. Genera los targets con
+                    das_pw, y el adjunto lo usa en tiempo de ejecución
 dataset_fieldii/    scripts MATLAB que generan el dataset de entrenamiento
-scripts/            precomputo y alineado de targets
+scripts/            precómputo y alineado de targets
 slurm/              los cuatro pasos del pipeline
 ```
 
-La lista de módulos no está escogida a mano: sale de un trazado transitivo de
-imports desde los tres puntos de entrada (entrenamiento, evaluación en Field II,
-evaluación en PICMUS). Si un fichero está aquí es porque algo lo importa.
+Aquí está solo lo que interviene en el modelo de la tesis. Se han eliminado las
+arquitecturas de las propuestas anteriores (A2 y B1-v2), que solo eran
+alcanzables por una bandera de línea de comandos, y los módulos de carga y
+dibujo del port de Schiffner, que este repositorio no usa.
 
 **No se incluyen** los datasets (~30 GB), los pesos entrenados ni los resultados.
 Todo se regenera con el pipeline de abajo.

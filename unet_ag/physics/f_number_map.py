@@ -30,7 +30,7 @@ import torch
 from torch import Tensor
 
 # Schiffner FNumber lives under schiffner_fd-f/ (hyphen). Reuse via the same
-# pattern as zhang_dnn/measurement_operator_fdf.py.
+# pattern as physics/operator_fdf.py.
 _SCHIFFNER_ROOT = Path(__file__).resolve().parents[2] / "schiffner_fd-f"
 if str(_SCHIFFNER_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCHIFFNER_ROOT))

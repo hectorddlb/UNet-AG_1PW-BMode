@@ -1,1 +1,1 @@
-"""Model backbones for B1, A1, B2, A2."""
+"""Arquitectura del modelo: B1V3Residual sobre U-Net con attention gates."""

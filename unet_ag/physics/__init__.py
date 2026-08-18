@@ -1,1 +1,1 @@
-"""Physical operators: H_Fdf wrapper + F-number maps + classical beamformers."""
+"""Operador fisico: OpHFdf (medida en Fourier y adjunto) + mapa de F-number."""

@@ -10,4 +10,3 @@
 numpy==2.4.4
 scipy==1.17.1
 h5py==3.16.0
-matplotlib==3.10.9

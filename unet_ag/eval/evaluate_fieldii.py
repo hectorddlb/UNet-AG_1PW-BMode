@@ -30,9 +30,6 @@ from scipy.signal import hilbert
 
 from ..data.manifest import field_ii_split
 from ..data.rf_loader import FieldIIMultiAngleLoader
-from ..models.a2_unet_fourier import A2UNetFourier
-from ..models.b1_unet_attention_fnum import B1UNetAttentionFNum
-from ..models.b1_v2_softdas import B1V2SoftDAS
 from ..models.b1_v3_residual import B1V3Residual
 from ..physics.f_number_map import compute_f_number_map_band_avg
 from ..physics.h_fdf_wrapper import make_op_for_angle
@@ -52,7 +49,7 @@ DYN_RANGE_DB = 60.0
 
 def _envelope_log_compress(img: np.ndarray, dyn_range_db: float = DYN_RANGE_DB) -> np.ndarray:
     env = np.abs(hilbert(img, axis=0))
-    # Relative normalisation (see train/b1_attention_gate.py): an absolute
+    # Relative normalisation (see train/common.py): an absolute
     # epsilon swamps Field II native amplitudes (~1e-23) → constant image.
     env_max = float(env.max())
     if env_max <= 0.0:
@@ -90,56 +87,6 @@ def _reconstruct_b1(model, sample, grid_z, grid_x, device: str) -> tuple[np.ndar
     )
     f_map_t = torch.from_numpy(f_map).to(device).unsqueeze(0).unsqueeze(0)
     pred = model(x0_t, f_map_t)                                              # (1,1,Nz,Nx)
-    return pred[0, 0].cpu().numpy().astype(np.float32), x0_env
-
-
-@torch.no_grad()
-def _reconstruct_b1_v2(model, sample, grid_z, grid_x, device: str) -> tuple[np.ndarray, np.ndarray]:
-    """B1-v2 takes raw RF (after z-score) and the F-number map; soft-DAS is
-    internal. Also returns the DAS_1PW baseline via ``H^T y`` for the CSV.
-    """
-    op = make_op_for_angle(0.0, sample.geometry, grid_z, grid_x, device=device, nf_chunk=None)
-    y = sample.rf_1pw.to(device).to(op.float_dtype)
-    x0 = op.adjoint(y)
-    if x0.is_complex():
-        x0 = x0.real
-    x0_env = _envelope_log_compress(x0.float().detach().cpu().numpy())
-
-    rf = sample.rf_1pw.to(device).float()
-    rf = (rf - rf.mean()) / (rf.std() + 1e-8)
-    f_map = compute_f_number_map_band_avg(
-        grid_z.cpu().numpy(), grid_x.cpu().numpy(), sample.geometry
-    )
-    f_map_t = torch.from_numpy(f_map).to(device).unsqueeze(0).unsqueeze(0)
-    pred = model(rf, f_map_t)                                                # (1,1,Nz,Nx) ∈ [0,1]
-    return pred[0, 0].cpu().numpy().astype(np.float32), x0_env
-
-
-@torch.no_grad()
-def _reconstruct_a2(model, sample, grid_z, grid_x, device: str,
-                    rf_n_samples: int = 3500) -> tuple[np.ndarray, np.ndarray]:
-    """A2 takes raw RF directly. Also returns the DAS_1PW baseline via H^T y
-    so the eval CSV has the same baseline columns as B1's.
-    """
-    # DAS_1PW baseline (same as B1)
-    op = make_op_for_angle(0.0, sample.geometry, grid_z, grid_x, device=device, nf_chunk=None)
-    y = sample.rf_1pw.to(device).to(op.float_dtype)
-    x0 = op.adjoint(y)
-    if x0.is_complex():
-        x0 = x0.real
-    x0_env = _envelope_log_compress(x0.float().detach().cpu().numpy())
-
-    # A2 input: pad/truncate RF to rf_n_samples, normalize /max(|.|), shape (1,1,D,K)
-    rf = sample.rf_1pw.detach().cpu()
-    D = rf.shape[0]
-    if D > rf_n_samples:
-        rf = rf[:rf_n_samples].contiguous()
-    elif D < rf_n_samples:
-        pad = torch.zeros(rf_n_samples - D, rf.shape[1], dtype=rf.dtype)
-        rf = torch.cat([rf, pad], dim=0).contiguous()
-    rf_scale = float(rf.abs().max()) + 1e-12
-    rf = (rf / rf_scale).to(device).unsqueeze(0).unsqueeze(0)                # (1,1,D,K)
-    pred = model(rf)                                                          # (1,1,Nz,Nx) ∈ [0,1]
     return pred[0, 0].cpu().numpy().astype(np.float32), x0_env
 
 
@@ -191,48 +138,11 @@ def _eval_image(image: np.ndarray, mat_path: Path, ptype: str,
 # ──────────────────────────────────────────────────────────────────
 
 
-def _load_b1_ckpt(ckpt_path: Path, device: str, base_ch: int = 32) -> B1UNetAttentionFNum:
-    sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    if isinstance(sd, dict) and "model" in sd:
-        sd = sd["model"]
-    model = B1UNetAttentionFNum(in_ch=1, base_ch=base_ch, embed_ch=16).to(device).eval()
-    model.load_state_dict(sd, strict=True)
-    return model
-
-
-def _load_b1_v2_ckpt(ckpt_path: Path, device: str,
-                     sample0, nz: int, nx: int,
-                     base_ch: int = 48) -> B1V2SoftDAS:
-    sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    if isinstance(sd, dict) and "model" in sd:
-        sd = sd["model"]
-    grid_z, grid_x = _build_grid(sample0.geometry, nz, nx)
-    model = B1V2SoftDAS(
-        grid_z.numpy(), grid_x.numpy(), sample0.geometry,
-        base_ch=base_ch, embed_ch=16,
-    ).to(device).eval()
-    model.load_state_dict(sd, strict=True)
-    return model
-
-
 def _load_b1_v3_ckpt(ckpt_path: Path, device: str, base_ch: int = 32) -> B1V3Residual:
     sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)
     if isinstance(sd, dict) and "model" in sd:
         sd = sd["model"]
     model = B1V3Residual(base_ch=base_ch, embed_ch=16).to(device).eval()
-    model.load_state_dict(sd, strict=True)
-    return model
-
-
-def _load_a2_ckpt(ckpt_path: Path, device: str, nz: int, nx: int,
-                  n_samples: int = 3500, n_elements: int = 128,
-                  base_ch: int = 32) -> A2UNetFourier:
-    sd = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    if isinstance(sd, dict) and "model" in sd:
-        sd = sd["model"]
-    model = A2UNetFourier(
-        n_samples=n_samples, n_elements=n_elements, nz=nz, nx=nx, base_ch=base_ch,
-    ).to(device).eval()
     model.load_state_dict(sd, strict=True)
     return model
 
@@ -260,15 +170,13 @@ def main() -> None:
     parser.add_argument("--target_root", type=Path, default=None,
                         help="If given, also eval Schiffner_75PW target as upper bound.")
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--model_type", choices=["b1", "a2", "b1_v2", "b1_v3", "b1_v4"], default="b1",
-                        help="b1 = adjoint+f_map; a2 = raw RF (padded); b1_v2 = raw RF + soft-DAS internal; "
-                             "b1_v3 = adjoint+f_map with residual skip + zero-init out (identity at ep 0); "
-                             "b1_v4 = B1-v3 architecture trained with L1-anchor to x_DAS (same loader as b1_v3).")
+    parser.add_argument("--model_type", choices=["b1_v3", "b1_v4"], default="b1_v4",
+                        help="Misma arquitectura (B1V3Residual): adjunto + mapa de F-number, "
+                             "conexion residual y out_conv inicializada a cero. b1_v4 es la "
+                             "variante entrenada con anclaje L1 a x_DAS, que es la de la tesis.")
     parser.add_argument("--phantom_type", choices=["points", "cysts", "both"], default="both")
     parser.add_argument("--nz", type=int, default=612)
     parser.add_argument("--nx", type=int, default=388)
-    parser.add_argument("--rf_n_samples", type=int, default=3500,
-                        help="A2 only — must match training value (default 3500).")
     parser.add_argument("--base_ch", type=int, default=32,
                         help="Backbone base channel count — must match training (default 32).")
     parser.add_argument("--max_phantoms", type=int, default=None)
@@ -283,29 +191,13 @@ def main() -> None:
 
     loader = FieldIIMultiAngleLoader(args.data_root, phantom_type=args.phantom_type,
                                       keep_all_angles=False)
-    if args.model_type == "b1":
-        model = _load_b1_ckpt(args.ckpt, device, base_ch=args.base_ch)
-        prefix = "b1"
-    elif args.model_type == "b1_v2":
-        # Build LUT from the first available phantom (matches training-time choice).
-        sample0 = loader[0]
-        model = _load_b1_v2_ckpt(args.ckpt, device, sample0, nz=args.nz, nx=args.nx,
-                                 base_ch=args.base_ch)
-        with torch.no_grad():
-            g = model.gamma
-        print(f"  soft-DAS γ (loaded): F={g['F']:.3f}  edge={g['edge']:.3f}  gain={g['gain']:.3f}")
-        prefix = "b1"  # use same CSV column prefix so comparisons line up
-    elif args.model_type in ("b1_v3", "b1_v4"):
-        # Same model class (B1V3Residual); B1-v4 only differs in training loss.
-        model = _load_b1_v3_ckpt(args.ckpt, device, base_ch=args.base_ch)
-        with torch.no_grad():
-            g = model.gamma
-        print(f"  residual γ (loaded): gain={g['gain']:.3f}")
-        prefix = "b1"  # CSV columns aligned with B1/B1-v2/B1-v3
-    else:
-        model = _load_a2_ckpt(args.ckpt, device, nz=args.nz, nx=args.nx,
-                              n_samples=args.rf_n_samples, base_ch=args.base_ch)
-        prefix = "a2"
+    # b1_v3 y b1_v4 son la MISMA clase (B1V3Residual); solo difieren en la
+    # perdida de entrenamiento, que aqui ya no interviene.
+    model = _load_b1_v3_ckpt(args.ckpt, device, base_ch=args.base_ch)
+    with torch.no_grad():
+        g = model.gamma
+    print(f"  residual γ (loaded): gain={g['gain']:.3f}")
+    prefix = "b1"
     splits = field_ii_split(
         args.data_root,
         phantom_types=[args.phantom_type] if args.phantom_type != "both" else None,
@@ -329,14 +221,8 @@ def main() -> None:
         grid_z, grid_x = _build_grid(sample.geometry, args.nz, args.nx)
         grid_z_m, grid_x_m = grid_z.numpy(), grid_x.numpy()
 
-        if args.model_type in ("b1", "b1_v3", "b1_v4"):
-            # B1-v3 / B1-v4 share signatures with B1 baseline: input env_log(H^T y) + f_map.
-            pred_env, das_env = _reconstruct_b1(model, sample, grid_z, grid_x, device)
-        elif args.model_type == "b1_v2":
-            pred_env, das_env = _reconstruct_b1_v2(model, sample, grid_z, grid_x, device)
-        else:
-            pred_env, das_env = _reconstruct_a2(model, sample, grid_z, grid_x, device,
-                                                 rf_n_samples=args.rf_n_samples)
+        # entrada: env_log(H^T y) + mapa de F-number
+        pred_env, das_env = _reconstruct_b1(model, sample, grid_z, grid_x, device)
 
         row = {"phantom_id": sample.phantom_id, "ptype": ptype}
         for label, img in [(prefix, pred_env), ("das_1pw", das_env)]:

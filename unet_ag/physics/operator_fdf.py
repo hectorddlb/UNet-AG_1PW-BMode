@@ -39,9 +39,9 @@ from torch import Tensor
 
 # `schiffner_das` vive en la raiz del repo; anadimos esa raiz a sys.path para
 # que el modulo sea importable aunque se ejecute desde otro directorio.
-_SCHIFFNER_ROOT = Path(__file__).resolve().parent.parent
-if str(_SCHIFFNER_ROOT) not in sys.path:
-    sys.path.insert(0, str(_SCHIFFNER_ROOT))
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from schiffner_das.f_numbers import FNumber, GratingAngleLB  # noqa: E402
 from schiffner_das.normalizations import Normalization, NormalizationOn  # noqa: E402

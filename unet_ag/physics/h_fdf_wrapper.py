@@ -1,4 +1,4 @@
-"""Thin wrapper around ``zhang_dnn.measurement_operator_fdf`` for unet_ag.
+"""Envoltorio fino sobre ``operator_fdf`` (OpHFdf) para unet_ag.
 
 Contract (enforced by ``tests/test_h_fdf_wrapper.py``):
 - The returned operator has **0 learnable parameters**. ``H_Fdf`` is a fixed
@@ -14,19 +14,12 @@ finite differences in the outer training loop.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Optional
 
 import torch
 from torch import Tensor
 
-# Reuse the existing operator implementation (do not duplicate).
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-from zhang_dnn.measurement_operator_fdf import OpHFdf, MultiAngleOpHFdf  # noqa: E402
+from .operator_fdf import OpHFdf, MultiAngleOpHFdf
 
 
 DEFAULT_F_NUMBER_ANGLE_DEG = 60.0

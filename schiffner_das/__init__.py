@@ -1,37 +1,22 @@
 """
-schiffner_das — Python port of Schiffner's frequency-dependent F-number
-beamforming for coherent plane-wave compounding.
+schiffner_das — port a PyTorch de la conformacion con F-number dependiente de
+frecuencia de M. F. Schiffner, para compresion coherente de ondas planas.
 
-Quick start
------------
->>> from schiffner_das import das_pw, load_rf_mat
->>> from schiffner_das import GratingAngleLB, Tukey, NormalizationOn
->>> ds = load_rf_mat("data_RF.mat")
->>> result = das_pw(positions_x, positions_z, data_RF, f_s, angle, ...)
+En este repositorio cumple dos funciones, ambas necesarias:
+
+  das_pw                      genera los targets de entrenamiento
+                              (compresion de 75 ondas planas)
+  GratingAngleLB, Tukey,      los usa en tiempo de ejecucion el operador
+  NormalizationOn             adjunto que alimenta a UNet-AG
+
+Se han eliminado los modulos de carga de datos y de visualizacion del port
+original: este repositorio usa sus propios cargadores (unet_ag/data/) y no
+dibuja nada.
 """
 
-# Domain objects
 from .f_numbers import ConstantFNumber, FNumber, GratingAngleLB
 from .normalizations import Normalization, NormalizationOff, NormalizationOn
 from .windows import Boxcar, Hann, Triangular, Tukey, Window
-
-# Core beamforming
 from .beamforming import DASResult, das_pw
-
-# Data I/O
-from .data_io import (
-    RFDataset,
-    PICMUSScanGrid,
-    PICMUSPhantomInfo,
-    load_rf_mat,
-    load_picmus_hdf5,
-    load_picmus_scan,
-    load_picmus_phantom,
-    load_auto,
-    discover_picmus,
-)
-
-# Visualization
-from .visualization import plot_bmode, plot_comparison, to_bmode_db
 
 __version__ = "0.1.0"
