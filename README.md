@@ -1,15 +1,10 @@
 # UNet-AG — B-mode desde una sola onda plana
 
-Reconstrucción de imagen ecográfica modo B a partir de **una única onda plana**,
-mediante una U-Net con *attention gates* condicionadas por F-number, montada
-sobre el adjunto de un operador físico de conformación en el dominio de Fourier.
+Reconstrucción de imagen ecográfica modo B a partir de una única onda plana,
+mediante una U-Net con attention gates condicionadas por F-number.
 
-El modelo se entrena **solo con simulaciones de Field II** y se valida en
-**PICMUS**, sin ver un solo dato del benchmark durante el entrenamiento: es una
-transferencia limpia de simulación a adquisición real.
-
-Este repositorio contiene lo mínimo para replicar ese entrenamiento y esa
-validación. Nada más.
+El modelo se entrena solo con simulaciones de Field II y se valida en
+PICMUS, sin ver un solo dato del benchmark durante el entrenamiento.
 
 ---
 
