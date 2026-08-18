@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Datos y salidas: se regeneran con el pipeline, no se versionan.
+datasets/
+targets_schiffner_raw/
+targets_schiffner_aligned/
+results/
+slurm_logs/
+*.mat
+*.npy
+*.pt
+
+.venv/
+env/
+.DS_Store

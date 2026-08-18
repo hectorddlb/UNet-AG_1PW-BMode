@@ -1,0 +1,13 @@
+# Versiones exactas con las que se produjeron los resultados de la tesis
+# (Python 3.11.6, NVIDIA TITAN RTX, driver CUDA 12.1).
+#
+# torch se instala aparte porque la rueda depende de la version de CUDA:
+#   pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+#
+# El codigo no usa nada especifico de estas versiones; numpy>=1.24 y
+# torch>=2.0 deberian bastar. Se fijan porque son las verificadas.
+
+numpy==2.4.4
+scipy==1.17.1
+h5py==3.16.0
+matplotlib==3.10.9
