@@ -192,23 +192,29 @@ se puede copiar tal cual.
 PICMUS, media ± desviación entre 3 seeds. FWHM lateral en mm (↓ mejor);
 gCNR (↑ mejor).
 
-| Método | entrada | exp FWHM_lat | exp gCNR | GFLOP | parámetros |
-|---|---|---|---|---|---|
-| DAS 1 PW | 1 PW | 3.728 | 0.528 | 312 | — |
-| DAS 75 PW | 75 PW | 1.734 | **0.798** | 23,417 | — |
-| Schiffner Fd-F 75 PW | 75 PW | **1.305** | 0.664 | 23,417 | — |
-| DRUS (difusión) | 1 PW | 1.619 | 0.786 | 115,875 | 552.8 M |
-| **UNet-AG** | 1 PW | 2.765±0.245 | 0.721±0.058 | **372** | **3.5 M** |
+| Método | entrada | sim FWHM_lat | exp FWHM_lat | sim gCNR | exp gCNR | GFLOP | parámetros |
+|---|---|---|---|---|---|---|---|
+| DAS 1 PW | 1 PW | **1.236** | 3.728 | 0.558 | 0.528 | 312 | — |
+| Schiffner Fd-F 1 PW | 1 PW | 1.489 | 2.997 | 0.593 | 0.608 | 312 | — |
+| DAS 75 PW | 75 PW | 0.770 | 1.734 | 0.964 | **0.798** | 23,417 | — |
+| Schiffner Fd-F 75 PW | 75 PW | 0.896 | **1.305** | 0.966 | 0.664 | 23,417 | — |
+| DRUS (difusión) | 1 PW | 0.869 | 1.619 | **0.976** | 0.786 | 115,875 | 552.8 M |
+| **UNet-AG** | 1 PW | 1.487±0.157 | 2.765±0.245 | 0.564±0.006 | 0.721±0.058 | **372** | **3.5 M** |
 
 **Lectura honesta.** UNet-AG no bate a los métodos de 75 ondas planas en
-resolución. Su aportación está en otro sitio:
+resolución. Frente a su línea base correcta de una sola onda plana —Schiffner
+Fd-F 1 PW, que cuesta lo mismo (312 GFLOP) y no tiene parámetros— el balance
+está repartido:
 
-- **Contra su línea base directa** —DAS 1 PW, la misma entrada— mejora un 26 %
-  la FWHM lateral experimental y un 37 % el gCNR experimental, con 1.19× su
-  coste en operaciones.
+- **Gana en el dominio experimental**: +7.7 % en FWHM lateral y +18.6 % en gCNR,
+  con 1.19× su coste en operaciones.
+- **No gana en simulación**: empata en resolución (1.487 frente a 1.489) y
+  pierde en contraste (gCNR 0.564 frente a 0.593).
 - **En contraste experimental** alcanza a una línea base de difusión con **311×
-  menos operaciones y 157× menos parámetros**, y supera a Schiffner Fd-F con
-  **63× menos operaciones**.
+  menos operaciones y 157× menos parámetros**.
+
+Comparar contra DAS 1 PW da cifras más vistosas (−26 % y +37 %), pero es la más
+débil de las tres líneas base de una onda plana, así que no se citan aquí.
 
 Dos advertencias que conviene tener presentes al comparar:
 
@@ -222,7 +228,12 @@ Dos advertencias que conviene tener presentes al comparar:
 
 ### Limitación conocida
 
-Existe un **salto de dominio Field II → PICMUS** que no se ha conseguido cerrar.
+Buena parte de lo que UNet-AG aporta sobre DAS lo aporta ya la **apodización
+Fd-F**, que es clásica, no tiene parámetros y cuesta lo mismo. La contribución
+neta del aprendizaje se limita al dominio experimental.
+
+Existe además un **salto de dominio Field II → PICMUS** que no se ha conseguido
+cerrar.
 Se probaron tres intervenciones ortogonales —el peso del anclaje β, entrenar con
 quistes además de dispersores puntuales, y desactivar la augmentación de forma
 de pulso— y **las tres mejoran dentro de dominio y degradan en PICMUS**.
