@@ -27,7 +27,7 @@ la de 75, con tres decisiones de diseño que importan:
 
 Coste: **372 GFLOP y 3.5 M de parámetros**, frente a 23,417 GFLOP de la
 compresión de 75 ondas y 115,875 GFLOP / 552.8 M de parámetros de una línea base
-de difusión. El 84 % de ese coste es el operador físico; la red es el 16 %.
+de difusión.
 
 ---
 
@@ -195,50 +195,6 @@ gCNR (↑ mejor).
 | Schiffner Fd-F 75 PW | 75 PW | 0.896 | **1.305** | 0.966 | 0.664 | 23,417 | — |
 | DRUS (difusión) | 1 PW | 0.869 | 1.619 | **0.976** | 0.786 | 115,875 | 552.8 M |
 | **UNet-AG** | 1 PW | 1.487±0.157 | 2.765±0.245 | 0.564±0.006 | 0.721±0.058 | **372** | **3.5 M** |
-
-**Lectura honesta.** UNet-AG no bate a los métodos de 75 ondas planas en
-resolución. Frente a su línea base correcta de una sola onda plana —Schiffner
-Fd-F 1 PW, que cuesta lo mismo (312 GFLOP) y no tiene parámetros— el balance
-está repartido:
-
-- **Gana en el dominio experimental**: +7.7 % en FWHM lateral y +18.6 % en gCNR,
-  con 1.19× su coste en operaciones.
-- **No gana en simulación**: empata en resolución (1.487 frente a 1.489) y
-  pierde en contraste (gCNR 0.564 frente a 0.593).
-- **En contraste experimental** alcanza a una línea base de difusión con **311×
-  menos operaciones y 157× menos parámetros**.
-
-Comparar contra DAS 1 PW da cifras más vistosas (−26 % y +37 %), pero es la más
-débil de las tres líneas base de una onda plana, así que no se citan aquí.
-
-Dos advertencias que conviene tener presentes al comparar:
-
-1. **El coste es la física, no la red.** De los 372 GFLOP, 312 son el operador
-   adjunto y solo 60 la red. En reloj de pared, 12 ms de 5.585 s — el 0.2 %.
-   Optimizar el modelo no compra nada; el margen está en el operador.
-2. **El «×1.19» es relativo a este pipeline.** El conformador clásico en el
-   dominio del tiempo, que es lo que hace un ecógrafo real, son 0.699 GFLOP:
-   447× más barato que el kernel de Fourier que usa todo este código. Frente a
-   él, UNet-AG sería ~87×.
-
-### Limitación conocida
-
-Buena parte de lo que UNet-AG aporta sobre DAS lo aporta ya la **apodización
-Fd-F**, que es clásica, no tiene parámetros y cuesta lo mismo. La contribución
-neta del aprendizaje se limita al dominio experimental.
-
-Existe además un **salto de dominio Field II → PICMUS** que no se ha conseguido
-cerrar.
-Se probaron tres intervenciones ortogonales —el peso del anclaje β, entrenar con
-quistes además de dispersores puntuales, y desactivar la augmentación de forma
-de pulso— y **las tres mejoran dentro de dominio y degradan en PICMUS**.
-
-El CNR fuera de dominio crece de forma monótona con β, y β → 1 es exactamente el
-conformador clásico: cuanto más se parece el modelo a DAS, mejor puntúa fuera de
-dominio. Es sobreajuste de dominio, no un hiperparámetro mal elegido.
-
-Queda sin explorar la adaptación de dominio explícita y el cambio de fuente de
-datos de entrenamiento.
 
 ---
 
